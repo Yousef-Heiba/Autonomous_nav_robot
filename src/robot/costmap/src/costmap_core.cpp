@@ -23,6 +23,7 @@ void CostmapCore::update_occupancy_grid(const std::vector<float>&ranges, float a
     for (std::size_t i{0}; i < ranges.size(); i++) {
         distance = range[i];
         angle = angle_min + (i*angle_increment);
+        //testing my push
 
     }
 }
