@@ -8,12 +8,14 @@
  
 class CostmapNode : public rclcpp::Node {
   public:
-    CostmapNode();
+    CostmapNode(); //this is the constructor
     
     // Place callback function here
     void publishMessage();
  
   private:
+    // callback function for the lidar topic
+    void lidar_callback(const sensor_msgs::msg::LaserScan::SharedPtr message);
     robot::CostmapCore costmap_;
     // Place these constructs here
     rclcpp::Publisher<std_msgs::msg::String>::SharedPtr string_pub_;
