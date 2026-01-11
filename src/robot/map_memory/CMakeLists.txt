@@ -13,7 +13,7 @@ endif()
 # Search for dependencies required for building this package
 find_package(ament_cmake REQUIRED) # ROS2 build tool
 find_package(rclcpp REQUIRED)      # ROS2 C++ package
-# ADD THESE TWO LINES
+# Added packages
 find_package(nav_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
 

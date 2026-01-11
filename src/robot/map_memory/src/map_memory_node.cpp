@@ -3,16 +3,16 @@
 
 MapMemoryNode::MapMemoryNode() 
     : Node("map_memory_node"), 
+      map_memory_(robot::MapMemoryCore(this->get_logger())),  // Move this earlier
       last_x(0.0), 
       last_y(0.0), 
       last_yaw(0.0),
       distance_threshold(5.0), 
       costmap_updated_(false), 
-      should_update_map_(false), 
-      map_memory_(robot::MapMemoryCore(this->get_logger())) 
+      should_update_map_(false)
 {
     // Set up the global_map_ metadata
-    double resolution = 0.1; 
+    double resolution = 0.2; 
     global_map_.info.resolution = resolution;
     global_map_.info.width = 30.0 / resolution;
     global_map_.info.height = 30.0 / resolution;
@@ -90,6 +90,7 @@ void MapMemoryNode::integrateCostmap() {
     double costmap_resolution = latest_costmap_.info.resolution;
     
     int cells_updated = 0;
+    int cells_unknown = 0;
     
     for (int cy = 0; cy < costmap_height; cy++) {
         for (int cx = 0; cx < costmap_width; cx++) {
@@ -122,7 +123,7 @@ void MapMemoryNode::integrateCostmap() {
         }
     }
     
-    RCLCPP_DEBUG(this->get_logger(), "Updated %d cells in global map", cells_updated);
+    RCLCPP_INFO(this->get_logger(), "Updated %d cells (%d were unknown)", cells_updated, cells_unknown);
 }
 
 int main(int argc, char ** argv)
