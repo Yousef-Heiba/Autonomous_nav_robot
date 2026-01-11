@@ -7,12 +7,12 @@ MapMemoryNode::MapMemoryNode()
       last_x(0.0), 
       last_y(0.0), 
       last_yaw(0.0),
-      distance_threshold(5.0), 
+      distance_threshold(1.5), 
       costmap_updated_(false), 
       should_update_map_(false)
 {
     // Set up the global_map_ metadata
-    double resolution = 0.2; 
+    double resolution = 0.1; 
     global_map_.info.resolution = resolution;
     global_map_.info.width = 30.0 / resolution;
     global_map_.info.height = 30.0 / resolution;
@@ -35,9 +35,6 @@ MapMemoryNode::MapMemoryNode()
     // Initialize timer
     timer_ = this->create_wall_timer(
         std::chrono::seconds(1), std::bind(&MapMemoryNode::updateMap, this));
-    
-    // Publish initial empty map so planner has something to work with
-    map_pub_->publish(global_map_);
     
     RCLCPP_INFO(this->get_logger(), "Map Memory Node initialized!");
 }
@@ -73,6 +70,10 @@ void MapMemoryNode::updateMap() {
         should_update_map_ = false;
         RCLCPP_INFO(this->get_logger(), "Published updated global map");
     }
+
+    // Always publish map (keeps timestamp fresh for planner)
+    global_map_.header.stamp = this->now();
+    map_pub_->publish(global_map_);
 }
 
 int MapMemoryNode::gridIndex(int x, int y, int width) {
