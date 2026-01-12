@@ -44,7 +44,7 @@ MapMemoryNode::MapMemoryNode()
 }
 
 void MapMemoryNode::costmapCallback(const nav_msgs::msg::OccupancyGrid::SharedPtr msg) {
-    if (costmap_counter_ < 20) {
+    if (costmap_counter_ < 30) {
         costmap_counter_++;
     }
     latest_costmap_ = *msg;
@@ -53,28 +53,29 @@ void MapMemoryNode::costmapCallback(const nav_msgs::msg::OccupancyGrid::SharedPt
 }
 
 void MapMemoryNode::odomCallback(const nav_msgs::msg::Odometry::SharedPtr msg) {
-    double x = msg->pose.pose.position.x;
-    double y = msg->pose.pose.position.y;
-    double yaw = getYawFromQuaternion(msg->pose.pose.orientation);
+    robot_x_ = msg->pose.pose.position.x;
+    robot_y_ = msg->pose.pose.position.y;
+    robot_yaw_ = getYawFromQuaternion(msg->pose.pose.orientation);
 
-    double distance = std::sqrt(std::pow(x - last_x, 2) + std::pow(y - last_y, 2));
+    double distance = std::sqrt(std::pow(robot_x_ - last_x, 2) + std::pow(robot_y_ - last_y, 2));
     if (distance >= distance_threshold) {
-        last_x = x;
-        last_y = y;
-        last_yaw = yaw;
+        last_x = robot_x_;
+        last_y = robot_y_;
+        last_yaw = robot_yaw_;
         should_update_map_ = true;
         RCLCPP_INFO(this->get_logger(), "Robot moved %.2fm, will update map", distance);
     }
 }
 
 void MapMemoryNode::updateMap() {
-    if (costmap_counter_ < 20) {
+    if (costmap_counter_ < 30) {
         RCLCPP_INFO(this->get_logger(), "Delay for costmap update on intialization");
         return;
     }
     if (first_update_map_ == false) {
         should_update_map_ = true;
         first_update_map_ = true;
+        RCLCPP_INFO(this->get_logger(), "Global map intialization is now complete");
     }
     if (should_update_map_ && costmap_updated_) {
         RCLCPP_INFO(this->get_logger(), "Integrating costmap at pose (%.2f, %.2f, %.2f)", 
@@ -110,12 +111,12 @@ void MapMemoryNode::integrateCostmap() {
             int8_t costmap_value = latest_costmap_.data[costmap_idx];
             
             // STEP 1: Grid cell → Meters (costmap local frame)
-            double lx = cx * costmap_resolution + latest_costmap_.info.origin.position.x;
-            double ly = cy * costmap_resolution + latest_costmap_.info.origin.position.y;
+            double lx = (cx + 0.5) * costmap_resolution + latest_costmap_.info.origin.position.x;
+            double ly = (cy + 0.5) * costmap_resolution + latest_costmap_.info.origin.position.y;
             
             // STEP 2: Costmap local → World frame
-            double wx = lx * cos(last_yaw) - ly * sin(last_yaw) + last_x;
-            double wy = lx * sin(last_yaw) + ly * cos(last_yaw) + last_y;
+            double wx = lx * cos(robot_yaw_) - ly * sin(robot_yaw_) + robot_x_;
+            double wy = lx * sin(robot_yaw_) + ly * cos(robot_yaw_) + robot_y_;
             
             // STEP 3: World → Global map grid
             int gx = (wx - global_map_.info.origin.position.x) / global_map_.info.resolution;
@@ -128,7 +129,7 @@ void MapMemoryNode::integrateCostmap() {
                 int global_idx = gridIndex(gx, gy, global_map_.info.width);
                 
                 if (costmap_value != -1) {
-                    global_map_.data[global_idx] = costmap_value;
+                    global_map_.data[global_idx] = std::max(global_map_.data[global_idx], costmap_value);
                     cells_updated++;
                 }
             }
