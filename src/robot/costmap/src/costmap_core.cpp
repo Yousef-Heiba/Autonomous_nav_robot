@@ -83,11 +83,11 @@ void CostmapCore::update_occupancy_grid(const std::vector<float>&ranges, float a
     int origin_y = static_cast<int>( grid_height_cells() / 2);
     for (std::size_t i{0}; i < ranges.size(); i++) {    
         distance = ranges[i];
+        angle = angle_min + (i*angle_increment);
         if (std::isinf(distance) != true) {
-            angle = angle_min + (i*angle_increment);
             //calculate the x and y distance of the oject
-            x_distance = distance * cos(angle);
-            y_distance = distance * sin(angle);
+            x_distance = distance * std::cos(angle);
+            y_distance = distance * std::sin(angle);
             //convert the distance to grid and add it to the occpuancy grid 
             x_grid = origin_x + static_cast<int>((x_distance / resolution())); 
             y_grid = origin_y + static_cast<int>((y_distance / resolution()));

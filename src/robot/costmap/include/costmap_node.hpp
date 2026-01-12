@@ -26,7 +26,7 @@ class CostmapNode : public rclcpp::Node {
     // Publisher for the costmap
     rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr costmap_publisher_;
     // Function to bundle data and publish
-    void publish_costmap();
+    void publish_costmap(const builtin_interfaces::msg::Time& stamp, const std::string& frame_id);
 };
  
 #endif 
