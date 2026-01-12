@@ -53,6 +53,7 @@ void MapMemoryNode::odomCallback(const nav_msgs::msg::Odometry::SharedPtr msg) {
     robot_x_ = msg->pose.pose.position.x;
     robot_y_ = msg->pose.pose.position.y;
     robot_yaw_ = getYawFromQuaternion(msg->pose.pose.orientation);
+    robot_vel_rot_ = msg->twist.twist.angular.z;
 
     double distance = std::sqrt(std::pow(robot_x_ - last_x, 2) + std::pow(robot_y_ - last_y, 2));
     if (distance >= distance_threshold) {
@@ -75,6 +76,11 @@ void MapMemoryNode::updateMap() {
         RCLCPP_INFO(this->get_logger(), "Global map intialization is now complete");
     }
     if (should_update_map_ && costmap_updated_) {
+        if (std::abs(robot_vel_rot_) > 0.1) {
+            RCLCPP_WARN(this->get_logger(), "Robot rotating too fast to map! Waiting for stability...");
+            return; 
+        }
+
         RCLCPP_INFO(this->get_logger(), "Integrating costmap at pose (%.2f, %.2f, %.2f)", 
                     last_x, last_y, last_yaw);
         integrateCostmap();

@@ -32,6 +32,7 @@ class MapMemoryNode : public rclcpp::Node {
     double robot_x_ = 0.0;
     double robot_y_ = 0.0;
     double robot_yaw_ = 0.0;
+    double robot_vel_rot_ = 0.0;
     const double distance_threshold = 1.5;
     bool costmap_updated_ = false;
     
