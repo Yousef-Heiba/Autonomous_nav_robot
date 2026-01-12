@@ -44,6 +44,8 @@ class MapMemoryNode : public rclcpp::Node {
 
     nav_msgs::msg::OccupancyGrid latest_costmap_;
     bool should_update_map_ = false;
+    bool first_update_map_ = false;
+    int costmap_counter_ = 0;
 };
 
 #endif 

@@ -9,7 +9,8 @@ MapMemoryNode::MapMemoryNode()
       last_yaw(0.0),
       distance_threshold(1.5), 
       costmap_updated_(false), 
-      should_update_map_(false)
+      should_update_map_(false),
+      first_update_map_(false)
 {
     // Set up the global_map_ metadata
     double resolution = 0.1; 
@@ -20,8 +21,8 @@ MapMemoryNode::MapMemoryNode()
     global_map_.info.origin.position.y = -15.0;
     global_map_.info.origin.position.z = 0.0;
     global_map_.info.origin.orientation.w = 1.0;
-    global_map_.header.frame_id = "odom";
-    global_map_.data.resize(300 * 300, -1);
+    global_map_.header.frame_id = "sim_world";
+    global_map_.data.resize(300 * 300, 0);
     
     // Initialize subscribers
     costmap_sub_ = this->create_subscription<nav_msgs::msg::OccupancyGrid>(
@@ -40,6 +41,9 @@ MapMemoryNode::MapMemoryNode()
 }
 
 void MapMemoryNode::costmapCallback(const nav_msgs::msg::OccupancyGrid::SharedPtr msg) {
+    if (costmap_counter_ < 20) {
+        costmap_counter_++;
+    }
     latest_costmap_ = *msg;
     costmap_updated_ = true;
     RCLCPP_DEBUG(this->get_logger(), "Received costmap");
@@ -61,6 +65,14 @@ void MapMemoryNode::odomCallback(const nav_msgs::msg::Odometry::SharedPtr msg) {
 }
 
 void MapMemoryNode::updateMap() {
+    if (costmap_counter_ < 20) {
+        RCLCPP_INFO(this->get_logger(), "Delay for costmap update on intialization");
+        return;
+    }
+    if (first_update_map_ == false) {
+        should_update_map_ = true;
+        first_update_map_ = true;
+    }
     if (should_update_map_ && costmap_updated_) {
         RCLCPP_INFO(this->get_logger(), "Integrating costmap at pose (%.2f, %.2f, %.2f)", 
                     last_x, last_y, last_yaw);
