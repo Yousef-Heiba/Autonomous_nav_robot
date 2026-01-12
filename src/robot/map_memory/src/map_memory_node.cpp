@@ -65,8 +65,6 @@ void MapMemoryNode::updateMap() {
         RCLCPP_INFO(this->get_logger(), "Integrating costmap at pose (%.2f, %.2f, %.2f)", 
                     last_x, last_y, last_yaw);
         integrateCostmap();
-        global_map_.header.stamp = this->now();
-        map_pub_->publish(global_map_);
         should_update_map_ = false;
         RCLCPP_INFO(this->get_logger(), "Published updated global map");
     }
@@ -115,10 +113,14 @@ void MapMemoryNode::integrateCostmap() {
                 gy >= 0 && gy < global_map_.info.height) {
                 
                 int global_idx = gridIndex(gx, gy, global_map_.info.width);
-                
-                if (costmap_value != -1) {
+
+                // Only update if the new value is higher (more certain it's an obstacle)
+                if (costmap_value > global_map_.data[global_idx]) {
                     global_map_.data[global_idx] = costmap_value;
                     cells_updated++;
+                } else if (costmap_value == 0 && global_map_.data[global_idx] == -1) {
+                    // Only mark as Free (0) if we didn't know anything about it yet (-1)
+                    global_map_.data[global_idx] = 0;
                 }
             }
         }
