@@ -21,46 +21,99 @@ std::vector<geometry_msgs::msg::PoseStamped> PlannerCore::planPath(
     const geometry_msgs::msg::Pose& start,
     const geometry_msgs::msg::Pose& goal)
 {
-    // Store map information
-    // resolution_, origin_x_, origin_y_, width_, height_
+    // 1. Store map information
+    resolution_ = map.info.resolution;
+    origin_x_ = map.info.origin.position.x;
+    origin_y_ = map.info.origin.position.y;
+    width_ = map.info.width;
+    height_ = map.info.height;
     
-    // Convert start and goal to grid coordinates
+    // 2. Convert start and goal to grid coordinates
+    CellIndex start_cell = worldToGrid(start.position.x, start.position.y);
+    CellIndex goal_cell = worldToGrid(goal.position.x, goal.position.y);
     
-    // Validate start and goal cells
+    // 3. Validate start and goal cells
+    if (!isValidCell(start_cell, map) || !isValidCell(goal_cell, map)) {
+        RCLCPP_WARN(logger_, "Start or Goal cell is invalid/occupied!");
+        return std::vector<geometry_msgs::msg::PoseStamped>();
+    }
     
-    // OPEN - set of nodes to be evaluated (priority queue)
-    // CLOSED - set of nodes already evaluated (unordered_set)
-    // add start node to OPEN
+    // 4. Setup A* Data Structures
+    // OPEN SET: Priority Queue (Min-Heap by f_score)
+    std::priority_queue<AStarNode, std::vector<AStarNode>, CompareF> open_set;
     
-    // loop
-        // current = node in OPEN with lowest f_cost
-        // remove current from OPEN
-        // add current to CLOSED
+    // G_SCORE: Cost from start to current node (Default infinity)
+    std::unordered_map<CellIndex, double, CellIndexHash> g_score;
+    
+    // CAME_FROM: To reconstruct the path later
+    std::unordered_map<CellIndex, CellIndex, CellIndexHash> came_from;
+    
+    // Initialize Start Node
+    g_score[start_cell] = 0.0;
+    double start_f = calculateHeuristic(start_cell, goal_cell);
+    open_set.push(AStarNode(start_cell, start_f));
+    
+    // 5. Main A* Loop
+    while (!open_set.empty()) {
+        // Get node with lowest f_score
+        CellIndex current = open_set.top().index;
+        open_set.pop();
         
-        // if current is the target node, path has been found
-            // return
-        
-        // foreach neighbour of current node
-            // if neighbour is not traversable or neighbour is in CLOSED
-                // skip to next neighbour
+        // Check if goal reached
+        if (current == goal_cell) {
+            // Reconstruct path
+            std::vector<CellIndex> path_indices = reconstructPath(start_cell, goal_cell, came_from);
             
-            // if new path to neighbour is shorter OR neighbour is not in OPEN
-                // set f_cost of neighbour
-                // set parent of neighbour to current
-                // if neighbour is not in OPEN
-                    // add neighbour to OPEN
+            // Convert to World Coordinates (PoseStamped)
+            std::vector<geometry_msgs::msg::PoseStamped> path_output;
+            for (const auto& cell : path_indices) {
+                geometry_msgs::msg::PoseStamped pose;
+                pose.header.frame_id = "map"; // Ensure this matches your map frame
+                
+                double world_x, world_y;
+                gridToWorld(cell, world_x, world_y);
+                
+                pose.pose.position.x = world_x;
+                pose.pose.position.y = world_y;
+                pose.pose.position.z = 0.0;
+                pose.pose.orientation.w = 1.0;
+                
+                path_output.push_back(pose);
+            }
+            RCLCPP_INFO(logger_, "Path found with %zu steps", path_output.size());
+            return path_output;
+        }
+        
+        // Expand Neighbors
+        std::vector<CellIndex> neighbors = getNeighbors(current);
+        for (const auto& neighbor : neighbors) {
+            
+            // Skip if obstacle
+            if (!isValidCell(neighbor, map)) {
+                continue;
+            }
+            
+            // Calculate tentative g_score
+            double move_cost = getMovementCost(current, neighbor);
+            double tentative_g = g_score[current] + move_cost;
+            
+            // If this path to neighbor is better than any previous one
+            if (g_score.find(neighbor) == g_score.end() || tentative_g < g_score[neighbor]) {
+                
+                // Update tracking info
+                came_from[neighbor] = current;
+                g_score[neighbor] = tentative_g;
+                double f_score = tentative_g + calculateHeuristic(neighbor, goal_cell);
+                
+                // Add to Open Set
+                open_set.push(AStarNode(neighbor, f_score));
+            }
+        }
+    }
     
-    // Check if path was found
-    
-    // Reconstruct path from start to goal
-    
-    // Convert path cells to world coordinates (PoseStamped)
-    
-    // Return path
-    
+    RCLCPP_WARN(logger_, "Failed to find a path!");
     return std::vector<geometry_msgs::msg::PoseStamped>();
 }
-
 // ------------------- Coordinate Conversion ------------------- //
 
 CellIndex PlannerCore::worldToGrid(double world_x, double world_y) const
