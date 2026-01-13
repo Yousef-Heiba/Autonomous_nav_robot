@@ -68,7 +68,7 @@ std::vector<geometry_msgs::msg::PoseStamped> PlannerCore::planPath(
             std::vector<geometry_msgs::msg::PoseStamped> path_output;
             for (const auto& cell : path_indices) {
                 geometry_msgs::msg::PoseStamped pose;
-                pose.header.frame_id = "map"; // Ensure this matches your map frame
+                pose.header.frame_id = "sim_world"; // Ensure this matches your map frame
                 
                 double world_x, world_y;
                 gridToWorld(cell, world_x, world_y);
@@ -151,7 +151,7 @@ bool PlannerCore::isValidCell(const CellIndex& cell, const nav_msgs::msg::Occupa
     // Occupancy values: -1 = unknown, 0 = free, 100 = occupied
     int8_t occupancy = map.data[index];
     
-    if (occupancy < 0 || occupancy > 50) {
+    if (occupancy > 0) {
         return false;  // Unknown or occupied, also adjustable
     }
     

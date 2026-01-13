@@ -135,7 +135,7 @@ void PlannerNode::planPath()
     // Create and publish the path message
     nav_msgs::msg::Path path;
     path.header.stamp = this->get_clock()->now();
-    path.header.frame_id = "map";  // Should match the map frame
+    path.header.frame_id = "sim_world";  // Should match the map frame
     path.poses = path_poses;
     
     path_pub_->publish(path);

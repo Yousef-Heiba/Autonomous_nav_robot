@@ -3,7 +3,7 @@
  
 #include "costmap_node.hpp"
  
-CostmapNode::CostmapNode() : Node("costmap"), costmap_(robot::CostmapCore(this->get_logger(), 0.1, 30, 30, 1.5)) {
+CostmapNode::CostmapNode() : Node("costmap"), costmap_(robot::CostmapCore(this->get_logger(), 0.1, 30, 30, 1.25)) {
   // Subscribe to the lidar topic
   costmap_lidar_ = this->create_subscription<sensor_msgs::msg::LaserScan>(
     "/lidar",
