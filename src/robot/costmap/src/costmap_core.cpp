@@ -2,7 +2,7 @@
 
 namespace robot {
 
-CostmapCore::CostmapCore(const rclcpp::Logger& logger, double resolution, int height, int width, int inflation_radius):
+CostmapCore::CostmapCore(const rclcpp::Logger& logger, double resolution, int height, int width, double inflation_radius):
  logger_(logger),
  resolution_{resolution},
  height_{height},
@@ -22,7 +22,7 @@ CostmapCore::CostmapCore(const rclcpp::Logger& logger, double resolution, int he
         return width_;
     }
 
-    int CostmapCore::inflation_radius() const {
+    double CostmapCore::inflation_radius() const {
         return inflation_radius_;
     }
 
@@ -49,8 +49,8 @@ void CostmapCore::initialize_occupancy_grid() {
     occupancy_grid_.assign(grid_width_cells() * grid_height_cells(), 0);
 }
 
-void CostmapCore::inflate_occupancy_grid(int x_grid, int y_grid, int max_cost, int inflation_radius) {
-    int radius_cells = inflation_radius / resolution();
+void CostmapCore::inflate_occupancy_grid(int x_grid, int y_grid, int max_cost, double inflation_radius) {
+    int radius_cells = static_cast<int>(inflation_radius / resolution());
     for (int dy = -radius_cells; dy <= (radius_cells); dy++) {
         for (int dx = -radius_cells; dx <= (radius_cells); dx++) {
             double euc_distance = std::sqrt(dx*dx + dy*dy);

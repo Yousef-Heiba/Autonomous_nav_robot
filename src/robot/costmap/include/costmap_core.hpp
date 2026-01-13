@@ -11,14 +11,14 @@ namespace robot
 class CostmapCore {
   public:
     // Constructor, we pass in the node's RCLCPP logger to enable logging to terminal
-    explicit CostmapCore(const rclcpp::Logger& logger, double resolution, int height, int width, int inflation_radius);
+    explicit CostmapCore(const rclcpp::Logger& logger, double resolution, int height, int width, double inflation_radius);
     void initialize_occupancy_grid();
-    void inflate_occupancy_grid(int x_grid, int y_grid, int max_cost, int inflation_radius);
+    void inflate_occupancy_grid(int x_grid, int y_grid, int max_cost, double inflation_radius);
     void update_occupancy_grid(const std::vector<float>&ranges, float angle_min, float angle_increment);
     double resolution() const;
     int height() const;
     int width() const;
-    int inflation_radius() const;
+    double inflation_radius() const;
     int grid_width_cells();
     int grid_height_cells();
     std::vector<int8_t> get_grid_data() const;
@@ -30,7 +30,7 @@ class CostmapCore {
     double resolution_;
     int height_;
     int width_;
-    int inflation_radius_;
+    double inflation_radius_;
     int grid_width_cells_; //= static_cast<int>(width() / resolution());
     int grid_height_cells_; //= static_cast<int>(height() / resolution());
 };
